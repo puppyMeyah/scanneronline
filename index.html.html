@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Free Digital Scanner – Make Any PDF, Word or Image Look Scanned</title>
+<meta name="description" content="Free online digital scanner. Make your PDF, Word, image or text file look like it was scanned in color, grayscale or black and white. Private: your files never leave your device.">
+<meta name="keywords" content="digital scanner, fake scan, scan effect, pdf scanner online, free online scanner, look scanned">
+<meta property="og:title" content="Free Digital Scanner">
+<meta property="og:description" content="Make any file look scanned. Free and private.">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1b1f24;--muted:#5d6670;--line:#d9dde3;--accent:#2563eb;--accent-text:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--card:#1d2127;--text:#eceff3;--muted:#9aa3ad;--line:#333a43;--accent:#5b8def;--accent-text:#0b1220;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171b;--card:#1d2127;--text:#eceff3;--muted:#9aa3ad;--line:#333a43;--accent:#5b8def;--accent-text:#0b1220;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+main{max-width:860px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.6rem;margin:8px 0 4px}
+p.sub{color:var(--muted);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+#drop{border:2px dashed var(--line);border-radius:12px;padding:28px 12px;text-align:center;cursor:pointer;color:var(--muted)}
+#drop.over{border-color:var(--accent)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:4px}
+select,input[type=range]{width:100%}
+select{padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+button{background:var(--accent);color:var(--accent-text);border:0;border-radius:10px;padding:11px 18px;font-size:1rem;font-weight:600;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+#preview{max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;display:block;margin:0 auto}
+#status{color:var(--muted);font-size:.9rem;margin-top:8px;min-height:1.3em}
+.note{font-size:.85rem;color:var(--muted)}
+a.donate{display:inline-block;margin-top:6px;color:var(--accent);font-weight:600}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:10px;font-size:.92rem}
+.topbar a{background:var(--accent);color:var(--accent-text);text-decoration:none;font-weight:600;border-radius:999px;padding:7px 16px}
+</style>
+</head>
+<body>
+<main>
+<div class="topbar"><span>💙 This tool is free. If it helps you, please consider a small donation.</span><a href="https://ko-fi.com/kenshiii777" target="_blank" rel="noopener">Donate on Ko-fi ☕</a></div>
+<h1>Digital Scanner</h1>
+<p class="sub">Make a file look like it was scanned on a real scanner. Your file stays on your device and is never uploaded.</p>
+
+<div class="card">
+  <div id="drop">Tap or drop a file here<br><span class="note">PDF, Word (.docx), images (JPG, PNG, WebP), or text (.txt)</span><br><span id="fname" class="note">No file chosen</span></div>
+  <input id="file" type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.webp,.gif,.bmp,.txt" hidden>
+</div>
+
+<div class="card">
+  <div class="row">
+    <div><label for="mode">Scan mode</label>
+      <select id="mode"><option value="color">Color</option><option value="gray">Grayscale</option><option value="bw">Black &amp; white</option></select></div>
+    <div><label for="fmt">Download as</label>
+      <select id="fmt"><option value="pdf">PDF</option><option value="jpg">Image (JPG)</option><option value="png">Image (PNG)</option></select></div>
+    <div><label for="ptype">Paper texture</label>
+      <select id="ptype"><option value="off">Off</option><option value="7" selected>Crumpled paper (big wrinkles)</option><option value="22">Crinkled paper (small wrinkles)</option></select></div>
+    <div><label for="pamt">Texture amount</label>
+      <select id="pamt"><option value="0.01">1%</option><option value="0.02">2%</option><option value="0.03">3%</option><option value="0.05" selected>5%</option><option value="0.1">10%</option><option value="0.15">15%</option><option value="0.2">20%</option><option value="0.3">30%</option></select></div>
+    <div><label for="quality">Quality: <span id="qv">High</span></label>
+      <input id="quality" type="range" min="1" max="3" step="1" value="2"></div>
+    <div><label for="tilt">Paper tilt: <span id="tv">Slight</span></label>
+      <input id="tilt" type="range" min="0" max="3" step="1" value="1"></div>
+    <div><label for="noise">Paper noise: <span id="nv">Light</span></label>
+      <input id="noise" type="range" min="0" max="3" step="1" value="1"></div>
+    <div><label for="shadow">Edge shadow: <span id="sv">Light</span></label>
+      <input id="shadow" type="range" min="0" max="3" step="1" value="1"></div>
+    <div><label for="contrast">Contrast: <span id="cv">Normal</span></label>
+      <input id="contrast" type="range" min="0" max="3" step="1" value="1"></div>
+  </div>
+  <p class="note">Tip: Black &amp; white gives the smallest file size. Word layout is approximate; for exact results (and for Excel or PowerPoint), save the file as PDF first.</p>
+  <button id="go" disabled>Scan &amp; download</button>
+  <div id="status"></div>
+</div>
+
+<div class="card" id="pcard" hidden>
+  <label>Preview (page 1)</label>
+  <canvas id="preview"></canvas>
+</div>
+
+<div class="card note">
+  <strong>Privacy:</strong> everything runs inside your browser. No files are sent to any server.<br>
+  Enjoying this free tool? <a class="donate" href="https://ko-fi.com/kenshiii777" target="_blank" rel="noopener">Support it with a donation ☕</a><br>
+  Advertising or business questions? <a class="donate" id="mail" href="#">Contact me</a>
+</div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx-preview/0.3.2/docx-preview.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const LABELS = {quality:["Low","Medium","High"],tilt:["Off","Slight","Medium","Strong"],noise:["Off","Light","Medium","Heavy"],shadow:["Off","Light","Medium","Strong"],contrast:["Soft","Normal","High","Very high"]};
+const ABBR = {quality:"qv",tilt:"tv",noise:"nv",shadow:"sv",contrast:"cv"};
+Object.keys(ABBR).forEach(k=>{
+  const upd=()=>{$(ABBR[k]).textContent=LABELS[k][k==="quality"?$(k).value-1:$(k).value]};
+  $(k).addEventListener("input",upd);upd();
+});
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const MAX_BYTES = 50*1024*1024, MAX_PAGES = 60;
+let fileInfo = null;
+const mk=(w,h)=>{const c=document.createElement("canvas");c.width=Math.round(w);c.height=Math.round(h);return c;};
+function openDoc(){ if(!fileInfo.doc) fileInfo.doc=buildDoc(fileInfo); return fileInfo.doc; }
+async function buildDoc(f){
+  if(f.kind==="pdf"){
+    const pdf=await pdfjsLib.getDocument({data:f.buf.slice(0)}).promise;
+    return {count:pdf.numPages, async getSource(n,sc){
+      const page=await pdf.getPage(n), vp=page.getViewport({scale:sc});
+      const c=mk(vp.width,vp.height), x=c.getContext("2d");
+      x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height);
+      await page.render({canvasContext:x,viewport:vp}).promise;
+      return {src:c,w:vp.width/sc,h:vp.height/sc};}};
+  }
+  if(f.kind==="image"){
+    const url=URL.createObjectURL(new Blob([f.buf],{type:f.type||"image/jpeg"}));
+    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=url;});
+    const land=img.width>img.height, pw=land?842:595, ph=land?595:842;
+    return {count:1, async getSource(n,sc){
+      const c=mk(pw*sc,ph*sc), x=c.getContext("2d");
+      x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height);
+      const m=24*sc, r=Math.min((c.width-2*m)/img.width,(c.height-2*m)/img.height);
+      const w=img.width*r, h=img.height*r;
+      x.drawImage(img,(c.width-w)/2,(c.height-h)/2,w,h);
+      return {src:c,w:pw,h:ph};}};
+  }
+  if(f.kind==="text"){
+    const text=new TextDecoder().decode(f.buf).replace(/\t/g,"    ");
+    const W=595,H=842,M=56,LH=15,FS=11,per=Math.floor((H-2*M)/LH);
+    const mx=mk(10,10).getContext("2d"); mx.font=FS+"px Arial,sans-serif";
+    const lines=[];
+    for(const para of text.split(/\r?\n/)){
+      let cur="";
+      for(const word of para.split(" ")){
+        const t=cur?cur+" "+word:word;
+        if(mx.measureText(t).width>W-2*M && cur){lines.push(cur);cur=word;} else cur=t;
+      }
+      lines.push(cur);
+    }
+    return {count:Math.max(1,Math.ceil(lines.length/per)), async getSource(n,sc){
+      const c=mk(W*sc,H*sc), x=c.getContext("2d");
+      x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height);
+      x.fillStyle="#000"; x.font=(FS*sc)+"px Arial,sans-serif"; x.textBaseline="top";
+      lines.slice((n-1)*per,n*per).forEach((l,i)=>x.fillText(l,M*sc,(M+i*LH)*sc));
+      return {src:c,w:W,h:H};}};
+  }
+  const box=document.createElement("div");
+  box.style.cssText="position:fixed;left:-99999px;top:0";
+  document.body.appendChild(box);
+  await docx.renderAsync(f.buf.slice(0),box,null,{inWrapper:false,breakPages:true});
+  const pages=[...box.querySelectorAll("section.docx")];
+  if(!pages.length) throw new Error("Empty document");
+  return {count:pages.length, async getSource(n,sc){
+    const p=pages[n-1];
+    const c=await html2canvas(p,{scale:sc*0.75,backgroundColor:"#fff",useCORS:true});
+    return {src:c,w:p.offsetWidth*0.75,h:p.offsetHeight*0.75};}};
+}
+
+function pick(f){
+  if(!f) return;
+  const ext=(f.name.split(".").pop()||"").toLowerCase();
+  const kind = ext==="pdf"?"pdf":ext==="docx"?"docx":["jpg","jpeg","png","webp","gif","bmp"].includes(ext)?"image":ext==="txt"?"text":null;
+  if(!kind){ $("status").textContent = ext==="doc" ? "Old .doc files are not supported. Please save it as .docx or PDF first." : "This file type is not supported yet. Please save it as PDF first."; return; }
+  if(f.size>MAX_BYTES){ $("status").textContent="File is too large (50 MB max)."; return; }
+  $("fname").textContent=f.name;
+  f.arrayBuffer().then(b=>{ fileInfo={kind,buf:b,type:f.type,doc:null}; $("go").disabled=false; $("status").textContent="Ready."; preview(); });
+}
+$("drop").onclick=()=>$("file").click();
+$("file").onchange=e=>pick(e.target.files[0]);
+$("drop").ondragover=e=>{e.preventDefault();$("drop").classList.add("over")};
+$("drop").ondragleave=()=>$("drop").classList.remove("over");
+$("drop").ondrop=e=>{e.preventDefault();$("drop").classList.remove("over");pick(e.dataTransfer.files[0])};
+
+function settings(){
+  return {mode:$("mode").value, scale:[1.2,1.8,2.5][$("quality").value-1],
+    tilt:[0,0.35,0.8,1.5][$("tilt").value], noise:[0,6,14,26][$("noise").value],
+    shadow:[0,0.12,0.25,0.4][$("shadow").value], contrast:[0.9,1.15,1.4,1.7][$("contrast").value],
+    pcols:$("ptype").value==="off"?0:+$("ptype").value, pamt:+$("pamt").value};
+}
+
+function paperTexture(ctx,w,h,cols,amt){
+  if(!cols) return;
+  const tw=Math.max(90,Math.round(w/5)), th=Math.round(tw*h/w);
+  const t=document.createElement("canvas"); t.width=tw; t.height=th;
+  const x=t.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,tw,th);
+  const rows=Math.max(cols,Math.round(cols*h/w)), cw=tw/cols, rh=th/rows, P=[];
+  for(let r=0;r<=rows;r++){P[r]=[];for(let c=0;c<=cols;c++){
+    P[r][c]=[(c+(c&&c<cols?Math.random()*0.8-0.4:0))*cw,(r+(r&&r<rows?Math.random()*0.8-0.4:0))*rh];}}
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const a=P[r][c],b=P[r][c+1],d=P[r+1][c],e=P[r+1][c+1];
+    [[a,b,d],[b,e,d]].forEach(tri=>{
+      const v=Math.round(255-Math.pow(Math.random(),2)*170);
+      x.fillStyle=x.strokeStyle="rgb("+v+","+v+","+v+")";
+      x.beginPath(); x.moveTo(tri[0][0],tri[0][1]); x.lineTo(tri[1][0],tri[1][1]); x.lineTo(tri[2][0],tri[2][1]);
+      x.closePath(); x.fill(); x.stroke();
+      x.strokeStyle="rgba(0,0,0,0.22)"; x.lineWidth=0.7; x.stroke();
+    });
+  }
+  ctx.save(); ctx.globalAlpha=Math.min(0.85,amt*3); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality="high";
+  ctx.drawImage(t,0,0,w,h); ctx.restore();
+}
+async function renderPage(doc, n, s, canvas){
+  const {src, w:pw, h:ph} = await doc.getSource(n, s.scale);
+
+  canvas.width=src.width; canvas.height=src.height;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = s.mode==="color" ? "#f4f2ee" : "#f2f2f2";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  const ang = (Math.random()*2-1)*s.tilt*Math.PI/180;
+  ctx.save();
+  ctx.translate(canvas.width/2, canvas.height/2);
+  ctx.rotate(ang);
+  const z = 1 + Math.abs(Math.sin(ang))*0.06;
+  ctx.scale(z,z);
+  ctx.drawImage(src, -src.width/2, -src.height/2);
+  ctx.restore();
+
+  const img = ctx.getImageData(0,0,canvas.width,canvas.height), d = img.data;
+  const c = s.contrast;
+  for(let i=0;i<d.length;i+=4){
+    let r=d[i], g=d[i+1], b=d[i+2];
+    const nz = s.noise ? (Math.random()-0.5)*s.noise : 0;
+    if(s.mode==="color"){
+      r=(r-128)*c+128+nz; g=(g-128)*c+128+nz; b=(b-128)*c+128+nz;
+    } else {
+      let l = 0.299*r+0.587*g+0.114*b;
+      l = (l-128)*c+128+nz;
+      if(s.mode==="bw") l = l>150 ? 255 : (l<110 ? 0 : (l-110)/40*255);
+      r=g=b=l;
+    }
+    d[i]=r<0?0:r>255?255:r; d[i+1]=g<0?0:g>255?255:g; d[i+2]=b<0?0:b>255?255:b;
+  }
+  ctx.putImageData(img,0,0);
+
+  if(s.shadow){
+    const w=canvas.width,h=canvas.height;
+    const g=ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*0.45,w/2,h/2,Math.max(w,h)*0.75);
+    g.addColorStop(0,"rgba(0,0,0,0)"); g.addColorStop(1,"rgba(0,0,0,"+s.shadow+")");
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  }
+  paperTexture(ctx,canvas.width,canvas.height,s.pcols,s.pamt);
+  return {w:pw, h:ph};
+}
+
+async function preview(){
+  try{
+    const doc = await openDoc();
+    await renderPage(doc,1,Object.assign(settings(),{scale:1.2}),$("preview"));
+    $("pcard").hidden=false;
+  }catch(e){ $("status").textContent="Could not read this file."; console.error(e); }
+}
+["mode","tilt","noise","shadow","contrast","ptype","pamt"].forEach(k=>$(k).addEventListener("change",()=>fileInfo&&preview()));
+
+$("go").onclick = async ()=>{
+  $("go").disabled=true;
+  try{
+    const s=settings();
+    const doc = await openDoc();
+    const total=Math.min(doc.count,MAX_PAGES);
+    const {jsPDF}=window.jspdf; let out=null; const fmt=$("fmt").value, imgs=[];
+    const dl=(blob,name)=>{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();};
+    const cv=document.createElement("canvas");
+    for(let n=1;n<=total;n++){
+      $("status").textContent="Scanning page "+n+" of "+total+"…";
+      const dim=await renderPage(doc,n,s,cv);
+      const o = dim.w>dim.h?"l":"p";
+      if(fmt!=="pdf"){ imgs.push(await new Promise(r=>cv.toBlob(r,fmt==="png"?"image/png":"image/jpeg",0.9))); continue; }
+      if(!out) out=new jsPDF({unit:"pt",format:[dim.w,dim.h],orientation:o,compress:true});
+      else out.addPage([dim.w,dim.h],o);
+      out.addImage(cv.toDataURL("image/jpeg",0.82),"JPEG",0,0,dim.w,dim.h);
+      await new Promise(r=>setTimeout(r));
+    }
+    const base=($("fname").textContent||"document").replace(/\.[^.]+$/,"");
+    if(fmt==="pdf") out.save(base+"-scanned.pdf");
+    else { const ext=fmt==="png"?"png":"jpg";
+      if(imgs.length===1) dl(imgs[0],base+"-scanned."+ext);
+      else { const z=new JSZip(); imgs.forEach((b,i)=>z.file(base+"-page"+(i+1)+"."+ext,b)); dl(await z.generateAsync({type:"blob"}),base+"-scanned-images.zip"); } }
+    $("status").textContent="Done! Your scanned file was downloaded.";
+  }catch(e){ $("status").textContent="Something went wrong: "+e.message; console.error(e); }
+  $("go").disabled=false;
+};
+(function(){const u="kinjoshuap",d="gmail.com",a=$("mail");a.href="mailto:"+u+"@"+d+"?subject=Advertising%20or%20business%20inquiry";a.textContent=u+"@"+d;})();
+</script>
+</body>
+</html>
