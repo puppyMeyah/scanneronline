@@ -30,6 +30,14 @@ button:disabled{opacity:.5;cursor:not-allowed}
 #preview{max-width:100%;height:auto;border:1px solid var(--line);border-radius:8px;display:block;margin:0 auto}
 #status{color:var(--muted);font-size:.9rem;margin-top:8px;min-height:1.3em}
 .note{font-size:.85rem;color:var(--muted)}
+.sw{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:1rem;color:var(--text);margin:0 0 4px}
+.sw input{position:absolute;opacity:0}
+.sw .knob{width:46px;height:26px;border-radius:999px;background:var(--line);position:relative;transition:.2s;flex:none}
+.sw .knob:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+.knob{background:var(--accent)}
+.sw input:checked+.knob:after{left:23px}
+.sw input:focus-visible+.knob{outline:2px solid var(--accent);outline-offset:2px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 a.donate{display:inline-block;margin-top:6px;color:var(--accent);font-weight:600}
 .topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:10px;font-size:.92rem}
 .topbar a{background:var(--accent);color:var(--accent-text);text-decoration:none;font-weight:600;border-radius:999px;padding:7px 16px}
@@ -41,9 +49,20 @@ a.donate{display:inline-block;margin-top:6px;color:var(--accent);font-weight:600
 <h1>Digital Scanner</h1>
 <p class="sub">Make a file look like it was scanned on a real scanner. Your file stays on your device and is never uploaded.</p>
 
+<div class="card" id="docbar">
+  <label class="sw"><input type="checkbox" id="docmode" checked><span class="knob"></span><b>Document mode</b></label>
+  <span class="note">For photos of paper: auto-crop, straighten, and clean up the text. PDFs are not changed.</span>
+  <div style="margin-top:10px"><label for="denh">Text cleanup</label>
+    <select id="denh"><option value="0">Soft</option><option value="1" selected>Normal</option><option value="2">Strong</option></select></div>
+  <div style="margin-top:10px"><label for="dsharp">Sharpen blurry text</label>
+    <select id="dsharp"><option value="0">Off</option><option value="1">Light</option><option value="2" selected>Normal</option><option value="3">Strong</option><option value="4">Maximum</option></select></div>
+</div>
+
 <div class="card">
   <div id="drop">Tap or drop a file here<br><span class="note">PDF, Word (.docx), images (JPG, PNG, WebP), or text (.txt)</span><br><span id="fname" class="note">No file chosen</span></div>
-  <input id="file" type="file" accept=".pdf,.docx,.jpg,.jpeg,.png,.webp,.gif,.bmp,.txt" hidden>
+  <input id="file" type="file" accept=".pdf,.docx,.txt,image/*" multiple hidden>
+  <input id="cam" type="file" accept="image/*" capture="environment" hidden>
+  <div class="btns"><button id="camBtn" type="button">📷 Take photo</button><button id="galBtn" type="button">🖼️ Choose photos</button></div>
 </div>
 
 <div class="card">
@@ -103,7 +122,7 @@ if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.clo
 const MAX_BYTES = 50*1024*1024, MAX_PAGES = 60;
 let fileInfo = null;
 const mk=(w,h)=>{const c=document.createElement("canvas");c.width=Math.round(w);c.height=Math.round(h);return c;};
-function openDoc(){ if(!fileInfo.doc) fileInfo.doc=buildDoc(fileInfo); return fileInfo.doc; }
+function openDoc(){ const k=$("docmode").checked+"|"+$("denh").value+"|"+$("dsharp").value; fileInfo.docs=fileInfo.docs||{}; return fileInfo.docs[k]||(fileInfo.docs[k]=buildDoc(fileInfo)); }
 async function buildDoc(f){
   if(f.kind==="pdf"){
     const pdf=await pdfjsLib.getDocument({data:f.buf.slice(0)}).promise;
@@ -115,15 +134,24 @@ async function buildDoc(f){
       return {src:c,w:vp.width/sc,h:vp.height/sc};}};
   }
   if(f.kind==="image"){
-    const url=URL.createObjectURL(new Blob([f.buf],{type:f.type||"image/jpeg"}));
-    const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=url;});
-    const land=img.width>img.height, pw=land?842:595, ph=land?595:842;
-    return {count:1, async getSource(n,sc){
+    const items=f.items||[{buf:f.buf,type:f.type}], on=$("docmode").checked, st=+$("denh").value, sh=+$("dsharp").value, pages=[];
+    for(const it of items){
+      const img=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=URL.createObjectURL(new Blob([it.buf],{type:it.type||"image/jpeg"}));});
+      pages.push(on?docScan(img,st,sh):img);
+      await new Promise(r=>setTimeout(r));
+    }
+    return {count:pages.length, async getSource(n,sc){
+      const im=pages[n-1];
+      if(on){
+        const L=im.width>=im.height, pw=L?595*im.width/im.height:595, ph=L?595:595*im.height/im.width;
+        const c=mk(pw*sc,ph*sc); c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+        return {src:c,w:pw,h:ph};
+      }
+      const land=im.width>im.height, pw=land?842:595, ph=land?595:842;
       const c=mk(pw*sc,ph*sc), x=c.getContext("2d");
       x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height);
-      const m=24*sc, r=Math.min((c.width-2*m)/img.width,(c.height-2*m)/img.height);
-      const w=img.width*r, h=img.height*r;
-      x.drawImage(img,(c.width-w)/2,(c.height-h)/2,w,h);
+      const m=24*sc, r=Math.min((c.width-2*m)/im.width,(c.height-2*m)/im.height), w=im.width*r, h=im.height*r;
+      x.drawImage(im,(c.width-w)/2,(c.height-h)/2,w,h);
       return {src:c,w:pw,h:ph};}};
   }
   if(f.kind==="text"){
@@ -158,20 +186,150 @@ async function buildDoc(f){
     return {src:c,w:p.offsetWidth*0.75,h:p.offsetHeight*0.75};}};
 }
 
+/* ===== Document mode: find the paper, straighten it, clean the text ===== */
+function homog(dst,src){
+  const A=[];
+  for(let i=0;i<4;i++){const [x,y]=dst[i],[X,Y]=src[i];
+    A.push([x,y,1,0,0,0,-x*X,-y*X,X]); A.push([0,0,0,x,y,1,-x*Y,-y*Y,Y]);}
+  for(let i=0;i<8;i++){
+    let m=i; for(let r=i+1;r<8;r++) if(Math.abs(A[r][i])>Math.abs(A[m][i])) m=r;
+    [A[i],A[m]]=[A[m],A[i]];
+    for(let r=0;r<8;r++){ if(r===i) continue; const f=A[r][i]/A[i][i]; for(let c=i;c<9;c++) A[r][c]-=f*A[i][c]; }
+  }
+  return A.map((r,i)=>r[8]/r[i]);
+}
+function flatten(cv,st){
+  const w=cv.width,h=cv.height,x=cv.getContext("2d",{willReadFrequently:true}),im=x.getImageData(0,0,w,h),d=im.data;
+  const B=Math.max(24,Math.round(Math.max(w,h)/40)), gw=Math.ceil(w/B), gh=Math.ceil(h/B), bg=new Float32Array(gw*gh*3);
+  for(let by=0;by<gh;by++)for(let bx=0;bx<gw;bx++)for(let ch=0;ch<3;ch++){
+    const hs=new Uint16Array(256); let n=0;
+    for(let y=by*B;y<Math.min(h,by*B+B);y+=2)for(let xx=bx*B;xx<Math.min(w,bx*B+B);xx+=2){hs[d[(y*w+xx)*4+ch]]++;n++;}
+    let a=0,i=256; while(i>0&&a<n*0.15){i--;a+=hs[i];}
+    bg[(by*gw+bx)*3+ch]=Math.max(i,50);
+  }
+  const [lo,hi]=[[25,235],[50,215],[75,200]][st], k=255/(hi-lo);
+  for(let y=0;y<h;y++){
+    const fy=Math.min(gh-1,Math.max(0,y/B-0.5)), y0=fy|0, y1=Math.min(gh-1,y0+1), wy=fy-y0;
+    for(let xx=0;xx<w;xx++){
+      const fx=Math.min(gw-1,Math.max(0,xx/B-0.5)), x0=fx|0, x1=Math.min(gw-1,x0+1), wx=fx-x0, i=(y*w+xx)*4;
+      for(let ch=0;ch<3;ch++){
+        const t=(y0*gw+x0)*3+ch, u=(y0*gw+x1)*3+ch, v=(y1*gw+x0)*3+ch, z=(y1*gw+x1)*3+ch;
+        const b=(bg[t]*(1-wx)+bg[u]*wx)*(1-wy)+(bg[v]*(1-wx)+bg[z]*wx)*wy;
+        const val=(d[i+ch]*255/b-lo)*k; d[i+ch]=val<0?0:val>255?255:val;
+      }
+    }
+  }
+  x.putImageData(im,0,0);
+}
+function upscale(cv){
+  const m=Math.max(cv.width,cv.height); if(m>=1600) return cv;
+  const k=Math.min(2.5,1600/m), o=mk(cv.width*k,cv.height*k), x=o.getContext("2d");
+  x.imageSmoothingEnabled=true; x.imageSmoothingQuality="high"; x.drawImage(cv,0,0,o.width,o.height); return o;
+}
+function sharpen(cv,lv){
+  const P=[null,[1,0.9],[1.3,1.6],[1.6,2.4],[1.9,3.2]][lv]; if(!P) return;
+  const sg=P[0], am=P[1], w=cv.width, h=cv.height, n=w*h;
+  const x=cv.getContext("2d",{willReadFrequently:true}), im=x.getImageData(0,0,w,h), d=im.data;
+  const Y=new Float32Array(n), T=new Float32Array(n), Bl=new Float32Array(n);
+  for(let i=0;i<n;i++) Y[i]=d[i*4]*0.299+d[i*4+1]*0.587+d[i*4+2]*0.114;
+  const R=Math.ceil(sg*3), ker=[]; let ks=0;
+  for(let i=-R;i<=R;i++){const v=Math.exp(-i*i/(2*sg*sg)); ker.push(v); ks+=v;}
+  for(let i=0;i<ker.length;i++) ker[i]/=ks;
+  for(let y=0;y<h;y++){const r=y*w; for(let xx=0;xx<w;xx++){let s=0;
+    for(let k=-R;k<=R;k++){const q=xx+k<0?0:xx+k>=w?w-1:xx+k; s+=Y[r+q]*ker[k+R];} T[r+xx]=s;}}
+  for(let y=0;y<h;y++)for(let xx=0;xx<w;xx++){let s=0;
+    for(let k=-R;k<=R;k++){const q=y+k<0?0:y+k>=h?h-1:y+k; s+=T[q*w+xx]*ker[k+R];} Bl[y*w+xx]=s;}
+  for(let i=0;i<n;i++){
+    const y0=Y[i]; let y1=y0+am*(y0-Bl[i]); y1=y1<0?0:y1>255?255:y1;
+    const dl=y1-y0, j=i*4;
+    for(let c=0;c<3;c++){const v=d[j+c]+dl; d[j+c]=v<0?0:v>255?255:v;}
+  }
+  x.putImageData(im,0,0);
+}
+function docScan(img,st,sh){
+  const k0=Math.min(1,2200/Math.max(img.width,img.height));
+  const W=Math.round(img.width*k0), H=Math.round(img.height*k0);
+  const wk=mk(W,H), wx=wk.getContext("2d",{willReadFrequently:true}); wx.drawImage(img,0,0,W,H);
+  const ss=Math.min(1,320/Math.max(W,H)), w=Math.max(8,Math.round(W*ss)), h=Math.max(8,Math.round(H*ss));
+  const sm=mk(w,h), sx=sm.getContext("2d",{willReadFrequently:true}); sx.drawImage(wk,0,0,w,h);
+  const d=sx.getImageData(0,0,w,h).data, g=new Uint8Array(w*h), hist=new Array(256).fill(0), tot=w*h;
+  for(let i=0;i<tot;i++){const v=(d[i*4]*77+d[i*4+1]*150+d[i*4+2]*29)>>8; g[i]=v; hist[v]++;}
+  let sum=0; for(let i=0;i<256;i++) sum+=i*hist[i];
+  let sB=0,wB=0,best=-1,th=128;
+  for(let i=0;i<256;i++){ wB+=hist[i]; const wF=tot-wB; if(!wB||!wF) continue; sB+=i*hist[i];
+    const mB=sB/wB, mF=(sum-sB)/wF, v=wB*wF*(mB-mF)*(mB-mF); if(v>best){best=v;th=i;} }
+  const lab=new Int32Array(tot); let bestL=0,bestN=0,L=0;
+  for(let s=0;s<tot;s++){
+    if(g[s]<=th||lab[s]) continue; L++; let n=0; const stack=[s]; lab[s]=L;
+    while(stack.length){const p=stack.pop(); n++; const x=p%w,y=(p/w)|0;
+      if(x>0&&g[p-1]>th&&!lab[p-1]){lab[p-1]=L;stack.push(p-1);}
+      if(x<w-1&&g[p+1]>th&&!lab[p+1]){lab[p+1]=L;stack.push(p+1);}
+      if(y>0&&g[p-w]>th&&!lab[p-w]){lab[p-w]=L;stack.push(p-w);}
+      if(y<h-1&&g[p+w]>th&&!lab[p+w]){lab[p+w]=L;stack.push(p+w);} }
+    if(n>bestN){bestN=n;bestL=L;}
+  }
+  let ok=false, TL,TR,BR,BL;
+  if(bestN>tot*0.15){
+    const e=[1e9,-1e9,-1e9,1e9], P=[[0,0],[w,h],[w,0],[0,h]];
+    for(let p=0;p<tot;p++){ if(lab[p]!==bestL) continue; const x=p%w,y=(p/w)|0, a=x+y, b=x-y;
+      if(a<e[0]){e[0]=a;P[0]=[x,y];} if(a>e[1]){e[1]=a;P[1]=[x,y];}
+      if(b>e[2]){e[2]=b;P[2]=[x,y];} if(b<e[3]){e[3]=b;P[3]=[x,y];} }
+    const kx=W/w, ky=H/h, cx=W/2, cy=H/2, f=p=>[cx+(p[0]*kx-cx)*0.985, cy+(p[1]*ky-cy)*0.985];
+    [TL,BR,TR,BL]=P.map(f); ok=true;
+  }
+  let out=wk;
+  if(ok){
+    const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+    let ow=Math.max(dist(TL,TR),dist(BL,BR)), oh=Math.max(dist(TL,BL),dist(TR,BR));
+    const r=oh/ow; if(Math.abs(r-1.414)<0.15) oh=ow*1.4142; else if(Math.abs(r-0.707)<0.1) ow=oh*1.4142;
+    const k=Math.min(1,2200/Math.max(ow,oh)); ow=Math.max(50,Math.round(ow*k)); oh=Math.max(50,Math.round(oh*k));
+    const Hm=homog([[0,0],[ow,0],[ow,oh],[0,oh]],[TL,TR,BR,BL]);
+    const src=wx.getImageData(0,0,W,H).data, o=mk(ow,oh), ox=o.getContext("2d"), oi=ox.createImageData(ow,oh), od=oi.data;
+    for(let y=0;y<oh;y++)for(let x=0;x<ow;x++){
+      const den=Hm[6]*x+Hm[7]*y+1, X=(Hm[0]*x+Hm[1]*y+Hm[2])/den, Y=(Hm[3]*x+Hm[4]*y+Hm[5])/den;
+      const x0=Math.max(0,Math.min(W-2,Math.floor(X))), y0=Math.max(0,Math.min(H-2,Math.floor(Y)));
+      const fx=Math.max(0,Math.min(1,X-x0)), fy=Math.max(0,Math.min(1,Y-y0));
+      const i=(y*ow+x)*4, a=(y0*W+x0)*4, b=a+4, c=a+W*4, e2=c+4;
+      for(let ch=0;ch<3;ch++) od[i+ch]=(src[a+ch]*(1-fx)+src[b+ch]*fx)*(1-fy)+(src[c+ch]*(1-fx)+src[e2+ch]*fx)*fy;
+      od[i+3]=255;
+    }
+    ox.putImageData(oi,0,0); out=o;
+  }
+  if(sh) out=upscale(out);
+  flatten(out,st);
+  if(sh) sharpen(out,sh);
+  window._docNote=ok?"Paper found, straightened and cleaned.":"Could not find the paper edges, so only the text was cleaned. Try a darker table behind the paper.";
+  return out;
+}
+const IMG_EXT=["jpg","jpeg","jpe","jfif","pjpeg","png","webp","gif","bmp","avif"];
+async function pickMany(list){
+  const fs=[...list]; if(!fs.length) return;
+  const isImg=f=>IMG_EXT.includes((f.name.split(".").pop()||"").toLowerCase())||f.type.startsWith("image/");
+  if(fs.length>1 && fs.every(isImg)){
+    if(fs.reduce((s,f)=>s+f.size,0)>MAX_BYTES){ $("status").textContent="Files are too large (50 MB max)."; return; }
+    const items=await Promise.all(fs.map(async f=>({buf:await f.arrayBuffer(),type:f.type})));
+    fileInfo={kind:"image",items,docs:{}}; $("fname").textContent=fs.length+" photos";
+    $("go").disabled=false; $("status").textContent="Ready."; preview();
+  } else pick(fs[0]);
+}
+$("camBtn").onclick=()=>$("cam").click();
+$("galBtn").onclick=()=>$("file").click();
+$("cam").onchange=e=>pickMany(e.target.files);
+
 function pick(f){
   if(!f) return;
   const ext=(f.name.split(".").pop()||"").toLowerCase();
-  const kind = ext==="pdf"?"pdf":ext==="docx"?"docx":["jpg","jpeg","png","webp","gif","bmp"].includes(ext)?"image":ext==="txt"?"text":null;
+  const kind = ext==="pdf"?"pdf":ext==="docx"?"docx":(["jpg","jpeg","jpe","jfif","pjpeg","png","webp","gif","bmp","avif"].includes(ext)||(f.type||"").startsWith("image/"))?"image":ext==="txt"?"text":null;
   if(!kind){ $("status").textContent = ext==="doc" ? "Old .doc files are not supported. Please save it as .docx or PDF first." : "This file type is not supported yet. Please save it as PDF first."; return; }
   if(f.size>MAX_BYTES){ $("status").textContent="File is too large (50 MB max)."; return; }
   $("fname").textContent=f.name;
   f.arrayBuffer().then(b=>{ fileInfo={kind,buf:b,type:f.type,doc:null}; $("go").disabled=false; $("status").textContent="Ready."; preview(); });
 }
 $("drop").onclick=()=>$("file").click();
-$("file").onchange=e=>pick(e.target.files[0]);
+$("file").onchange=e=>pickMany(e.target.files);
 $("drop").ondragover=e=>{e.preventDefault();$("drop").classList.add("over")};
 $("drop").ondragleave=()=>$("drop").classList.remove("over");
-$("drop").ondrop=e=>{e.preventDefault();$("drop").classList.remove("over");pick(e.dataTransfer.files[0])};
+$("drop").ondrop=e=>{e.preventDefault();$("drop").classList.remove("over");pickMany(e.dataTransfer.files)};
 
 function settings(){
   return {mode:$("mode").value, scale:[1.2,1.8,2.5][$("quality").value-1],
@@ -248,10 +406,10 @@ async function preview(){
   try{
     const doc = await openDoc();
     await renderPage(doc,1,Object.assign(settings(),{scale:1.2}),$("preview"));
-    $("pcard").hidden=false;
-  }catch(e){ $("status").textContent="Could not read this file."; console.error(e); }
+    $("pcard").hidden=false; if(window._docNote) $("status").textContent=window._docNote;
+  }catch(e){ $("status").textContent="Could not read this file. If it is an iPhone HEIC photo, please save or convert it as JPG first."; console.error(e); }
 }
-["mode","tilt","noise","shadow","contrast","ptype","pamt"].forEach(k=>$(k).addEventListener("change",()=>fileInfo&&preview()));
+["mode","tilt","noise","shadow","contrast","ptype","pamt","docmode","denh","dsharp"].forEach(k=>$(k).addEventListener("change",()=>fileInfo&&preview()));
 
 $("go").onclick = async ()=>{
   $("go").disabled=true;
